@@ -4,6 +4,32 @@ About
 `FastCGI`, `proxy`, `SCGI` and `uWSGI` caches.
 
 
+Changes in this fork
+====================
+This fork ([deconstruction/ngx_cache_purge_dynamic](https://github.com/deconstruction/ngx_cache_purge_dynamic))
+is based on [Danrancan/ngx_cache_purge_dynamic](https://github.com/Danrancan/ngx_cache_purge_dynamic)
+and adds the following:
+
+* **Prefix purge.** New directives `fastcgi_cache_purge_prefix`,
+  `proxy_cache_purge_prefix`, `scgi_cache_purge_prefix` and
+  `uwsgi_cache_purge_prefix` purge *every* cached entry whose URI starts with
+  a given prefix, for example all pages under `/images/`, or the whole cache
+  at once with `/`. Because nginx stores only a hash of the cache key in its
+  index, the module walks the cache directory tree, reads the plaintext key
+  stored inside each cache file and purges the matching entries. See
+  "Configuration directives (prefix purge)" and "Sample configuration
+  (prefix purge)" below.
+
+* **Exact purge compatibility with nginx 1.21+.** The original exact purge
+  directives (`fastcgi_cache_purge zone key`, etc.) accessed copied nginx
+  internal structs whose layout changed in nginx 1.21.0, which caused worker
+  crashes (segfaults) or non-working purges on current nginx. The cache zone
+  and key are now kept in the module's own configuration, so exact purge
+  works on modern nginx again. As a consequence, the older "same location"
+  syntax (`fastcgi_cache_purge on`, etc.) is no longer usable on nginx
+  1.21+; use the separate location syntax instead.
+
+
 Sponsors
 ========
 Work on the original patch was fully funded by [yo.se](http://yo.se).
@@ -27,7 +53,7 @@ Building as Dynamic Module on Ubuntu 20.04
 ===========================
 1) Clone this repository just outside of the Nginx repo directory
 ```
-git clone https://github.com/Danrancan/ngx_cache_purge_dynamic.git
+git clone https://github.com/deconstruction/ngx_cache_purge_dynamic.git
 ```
 2) Install build Essentials and Libraries
 ```
