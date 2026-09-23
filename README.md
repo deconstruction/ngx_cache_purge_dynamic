@@ -30,6 +30,33 @@ and adds the following:
   1.21+; use the separate location syntax instead.
 
 
+Изменения в этом форке
+======================
+Этот форк ([deconstruction/ngx_cache_purge_dynamic](https://github.com/deconstruction/ngx_cache_purge_dynamic))
+основан на [Danrancan/ngx_cache_purge_dynamic](https://github.com/Danrancan/ngx_cache_purge_dynamic)
+и добавляет следующее:
+
+* **Сброс по префиксу (prefix purge).** Новые директивы
+  `fastcgi_cache_purge_prefix`, `proxy_cache_purge_prefix`,
+  `scgi_cache_purge_prefix` и `uwsgi_cache_purge_prefix` сбрасывают *все*
+  записи кэша, чей URI начинается с заданного префикса, — например, все
+  страницы под `/images/` или весь кэш целиком через `/`. Поскольку nginx
+  хранит в индексе только хеш ключа кэша, модуль обходит дерево каталогов
+  кэша, читает plaintext-ключ, сохранённый внутри каждого файла кэша, и
+  удаляет совпавшие записи. См. разделы "Configuration directives (prefix
+  purge)" и "Sample configuration (prefix purge)" ниже.
+
+* **Совместимость точного сброса с nginx 1.21+.** Исходные директивы
+  точного сброса (`fastcgi_cache_purge zone key` и т. п.) обращались к
+  скопированным внутренним структурам nginx, раскладка которых изменилась
+  в nginx 1.21.0, что приводило к падению воркеров (segfault) или к
+  неработающему сбросу на современных nginx. Теперь зона кэша и ключ
+  хранятся в собственной конфигурации модуля, поэтому точный сброс снова
+  работает на новых nginx. Как следствие, старый синтаксис "same location"
+  (`fastcgi_cache_purge on` и т. п.) больше не работает на nginx 1.21+;
+  используйте синтаксис отдельного location (separate location syntax).
+
+
 Sponsors
 ========
 Work on the original patch was fully funded by [yo.se](http://yo.se).
