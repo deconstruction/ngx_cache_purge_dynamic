@@ -1,3 +1,9 @@
+    * Add prefix purge directives (*_cache_purge_prefix) to purge all
+      cached entries under a given URI prefix.
+    * Rework exact purge directives to stop relying on internal nginx
+      structures, restoring compatibility with nginx 1.21+ (the "same
+      location" syntax remains incompatible with nginx 1.21+).
+
 2014-12-23    VERSION 2.3
     * Fix compatibility with nginx-1.7.9+.
 

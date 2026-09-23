@@ -10,8 +10,18 @@ Work on the original patch was fully funded by [yo.se](http://yo.se).
 
 
 Status
-======
+=====
 This module is production-ready.
+
+Nginx version compatibility
+===========================
+`ngx_cache_purge` builds against nginx 0.7.60+ up to current releases.
+
+* The exact purge directives (`fastcgi_cache_purge zone key`, etc.) and the
+  new prefix purge directives are compatible with all supported versions.
+* The "same location" syntax (`fastcgi_cache_purge on`, etc.) relies on
+  internal nginx structures that changed in nginx 1.21.0, so it may crash
+  on nginx 1.21+. Use the separate location syntax instead.
 
 Building as Dynamic Module on Ubuntu 20.04
 ===========================
@@ -137,6 +147,55 @@ uwsgi_cache_purge
 Sets area and key used for purging selected pages from `uWSGI`'s cache.
 
 
+Configuration directives (prefix purge)
+=======================================
+New in this fork. Allow purging *every* cached entry whose URI starts with a
+given prefix, e.g. all pages under `/images/`. nginx hashes cache keys, so a
+pattern cannot be matched against the index alone: the module walks the cache
+directory tree, reads the plaintext key stored in each cache file and purges
+the matching entries. Expect the scan to take longer for large caches.
+
+The prefix is compared against the request-target part of the cache key
+(anything after `scheme://host`, or after the first `/` for keys like
+`$scheme$host$uri$is_args$args`). A trailing `*` is optional and stripped.
+
+fastcgi_cache_purge_prefix
+--------------------------
+* **syntax**: `fastcgi_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all entries of `zone_name` whose URI starts with `prefix`.
+`prefix` may contain variables, e.g. `$1` from a regex location capture.
+
+
+proxy_cache_purge_prefix
+------------------------
+* **syntax**: `proxy_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all entries of `zone_name` whose URI starts with `prefix`.
+
+
+scgi_cache_purge_prefix
+-----------------------
+* **syntax**: `scgi_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all entries of `zone_name` whose URI starts with `prefix`.
+
+
+uwsgi_cache_purge_prefix
+------------------------
+* **syntax**: `uwsgi_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all entries of `zone_name` whose URI starts with `prefix`.
+
+
 Sample configuration (same location syntax)
 ===========================================
     http {
@@ -172,6 +231,38 @@ Sample configuration (separate location syntax)
             }
         }
     }
+
+
+Sample configuration (prefix purge)
+===================================
+    http {
+        proxy_cache_path  /tmp/cache  keys_zone=tmpcache:10m;
+
+        server {
+            location / {
+                proxy_pass         http://127.0.0.1:8000;
+                proxy_cache        tmpcache;
+                proxy_cache_key    $uri$is_args$args;
+            }
+
+            location ~ ^/purge_prefix(/.*) {
+                allow                   127.0.0.1;
+                deny                    all;
+                proxy_cache_purge_prefix  tmpcache "$1";
+            }
+        }
+    }
+
+Purge every cached page under `/images/`:
+
+`curl http://127.0.0.1/purge_prefix/images/*`
+
+Purge the whole cache:
+
+`curl http://127.0.0.1/purge_prefix/*`
+
+The trailing `*` is optional; `proxy_cache_purge_prefix tmpcache "/images/"` is
+equivalent to `"/images/*"`.
 
 
 Testing
