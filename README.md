@@ -90,6 +90,52 @@ uwsgi_cache_purge
 Sets area and key used for purging selected pages from `uWSGI`'s cache.
 
 
+Configuration directives (prefix purge)
+=======================================
+fastcgi_cache_purge_prefix
+--------------------------
+* **syntax**: `fastcgi_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all cached entries of `zone_name` whose URI starts with `prefix`.
+`prefix` may contain variables, e.g. `$1` from a regex location capture.
+
+
+proxy_cache_purge_prefix
+------------------------
+* **syntax**: `proxy_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all cached entries of `zone_name` whose URI starts with `prefix`.
+
+
+scgi_cache_purge_prefix
+-----------------------
+* **syntax**: `scgi_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all cached entries of `zone_name` whose URI starts with `prefix`.
+
+
+uwsgi_cache_purge_prefix
+------------------------
+* **syntax**: `uwsgi_cache_purge_prefix zone_name prefix`
+* **default**: `none`
+* **context**: `location`
+
+Purge all cached entries of `zone_name` whose URI starts with `prefix`.
+
+Note: nginx stores only a hash of the cache key, so the prefix is matched
+by walking the cache directory tree and reading the plaintext key stored
+inside each cache file. The prefix is compared against the request-target
+part of the cache key (the part after `scheme://host`, or after the first
+`/` for keys like `$scheme$host$uri$is_args$args`). A trailing `*` is
+optional.
+
+
 Sample configuration (same location syntax)
 ===========================================
     http {
@@ -125,6 +171,38 @@ Sample configuration (separate location syntax)
             }
         }
     }
+
+
+Sample configuration (prefix purge)
+===================================
+    http {
+        proxy_cache_path  /tmp/cache  keys_zone=tmpcache:10m;
+
+        server {
+            location / {
+                proxy_pass         http://127.0.0.1:8000;
+                proxy_cache        tmpcache;
+                proxy_cache_key    $uri$is_args$args;
+            }
+
+            location ~ ^/purge_prefix(/.*) {
+                allow                     127.0.0.1;
+                deny                      all;
+                proxy_cache_purge_prefix  tmpcache "$1";
+            }
+        }
+    }
+
+Purge every cached page under `/images/`:
+
+    http://127.0.0.1/purge_prefix/images/*
+
+Purge the whole cache:
+
+    http://127.0.0.1/purge_prefix/*
+
+The trailing `*` is optional; `proxy_cache_purge_prefix tmpcache "/images/"`
+is equivalent to `"/images/*"`.
 
 
 Testing
